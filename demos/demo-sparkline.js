@@ -5,6 +5,7 @@ var d3Selection = require('d3-selection'),
     PubSub = require('pubsub-js'),
 
     sparklineChart = require('./../src/charts/sparkline'),
+    miniTooltip = require('./../src/charts/mini-tooltip'),
     sparklineDataBuilder = require('./../test/fixtures/sparklineDataBuilder');
     require('./helpers/resizeHelper');
 
@@ -21,15 +22,24 @@ function createSparklineChart() {
 
     dataset = testDataSet.with1Source().build();
 
+    var tooltip = miniTooltip();
     // Sparkline Chart Setup and start
     sparkline
         .dateLabel('dateUTC')
+        .axes(true)
+        .grid(true)
         .isAnimated(true)
         .duration(1000)
-        .height(containerWidth / 4)
+        .on('customMouseOver', tooltip.show)
+        .on('customMouseMove', tooltip.update)
+        .on('customMouseOut', tooltip.hide)
+        .height(containerWidth / 2)
         .width(containerWidth);
 
     container.datum(dataset.data).call(sparkline);
+
+    var tooltipContainer = d3Selection.select('.js-sparkline-chart-container .metadata-group');
+    tooltipContainer.datum([]).call(tooltip);
 }
 
 // Show charts if container available

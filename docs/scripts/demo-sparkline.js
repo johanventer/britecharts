@@ -24,7 +24,7 @@ webpackJsonp([5,9],[
 	    dataset = testDataSet.with1Source().build();
 	
 	    // Sparkline Chart Setup and start
-	    sparkline.dateLabel('dateUTC').isAnimated(true).duration(1000).height(containerWidth / 4).width(containerWidth);
+	    sparkline.dateLabel('dateUTC').axes(true).grid(true).isAnimated(true).duration(1000).height(containerWidth / 2).width(containerWidth);
 	
 	    container.datum(dataset.data).call(sparkline);
 	}
@@ -2151,7 +2151,199 @@ webpackJsonp([5,9],[
 
 
 /***/ }),
-/* 6 */,
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	// https://d3js.org/d3-axis/ Version 1.0.7. Copyright 2017 Mike Bostock.
+	(function (global, factory) {
+		 true ? factory(exports) :
+		typeof define === 'function' && define.amd ? define(['exports'], factory) :
+		(factory((global.d3 = global.d3 || {})));
+	}(this, (function (exports) { 'use strict';
+	
+	var slice = Array.prototype.slice;
+	
+	var identity = function(x) {
+	  return x;
+	};
+	
+	var top = 1;
+	var right = 2;
+	var bottom = 3;
+	var left = 4;
+	var epsilon = 1e-6;
+	
+	function translateX(x) {
+	  return "translate(" + (x + 0.5) + ",0)";
+	}
+	
+	function translateY(y) {
+	  return "translate(0," + (y + 0.5) + ")";
+	}
+	
+	function center(scale) {
+	  var offset = Math.max(0, scale.bandwidth() - 1) / 2; // Adjust for 0.5px offset.
+	  if (scale.round()) offset = Math.round(offset);
+	  return function(d) {
+	    return scale(d) + offset;
+	  };
+	}
+	
+	function entering() {
+	  return !this.__axis;
+	}
+	
+	function axis(orient, scale) {
+	  var tickArguments = [],
+	      tickValues = null,
+	      tickFormat = null,
+	      tickSizeInner = 6,
+	      tickSizeOuter = 6,
+	      tickPadding = 3,
+	      k = orient === top || orient === left ? -1 : 1,
+	      x = orient === left || orient === right ? "x" : "y",
+	      transform = orient === top || orient === bottom ? translateX : translateY;
+	
+	  function axis(context) {
+	    var values = tickValues == null ? (scale.ticks ? scale.ticks.apply(scale, tickArguments) : scale.domain()) : tickValues,
+	        format = tickFormat == null ? (scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments) : identity) : tickFormat,
+	        spacing = Math.max(tickSizeInner, 0) + tickPadding,
+	        range = scale.range(),
+	        range0 = range[0] + 0.5,
+	        range1 = range[range.length - 1] + 0.5,
+	        position = (scale.bandwidth ? center : identity)(scale.copy()),
+	        selection = context.selection ? context.selection() : context,
+	        path = selection.selectAll(".domain").data([null]),
+	        tick = selection.selectAll(".tick").data(values, scale).order(),
+	        tickExit = tick.exit(),
+	        tickEnter = tick.enter().append("g").attr("class", "tick"),
+	        line = tick.select("line"),
+	        text = tick.select("text");
+	
+	    path = path.merge(path.enter().insert("path", ".tick")
+	        .attr("class", "domain")
+	        .attr("stroke", "#000"));
+	
+	    tick = tick.merge(tickEnter);
+	
+	    line = line.merge(tickEnter.append("line")
+	        .attr("stroke", "#000")
+	        .attr(x + "2", k * tickSizeInner));
+	
+	    text = text.merge(tickEnter.append("text")
+	        .attr("fill", "#000")
+	        .attr(x, k * spacing)
+	        .attr("dy", orient === top ? "0em" : orient === bottom ? "0.71em" : "0.32em"));
+	
+	    if (context !== selection) {
+	      path = path.transition(context);
+	      tick = tick.transition(context);
+	      line = line.transition(context);
+	      text = text.transition(context);
+	
+	      tickExit = tickExit.transition(context)
+	          .attr("opacity", epsilon)
+	          .attr("transform", function(d) { return isFinite(d = position(d)) ? transform(d) : this.getAttribute("transform"); });
+	
+	      tickEnter
+	          .attr("opacity", epsilon)
+	          .attr("transform", function(d) { var p = this.parentNode.__axis; return transform(p && isFinite(p = p(d)) ? p : position(d)); });
+	    }
+	
+	    tickExit.remove();
+	
+	    path
+	        .attr("d", orient === left || orient == right
+	            ? "M" + k * tickSizeOuter + "," + range0 + "H0.5V" + range1 + "H" + k * tickSizeOuter
+	            : "M" + range0 + "," + k * tickSizeOuter + "V0.5H" + range1 + "V" + k * tickSizeOuter);
+	
+	    tick
+	        .attr("opacity", 1)
+	        .attr("transform", function(d) { return transform(position(d)); });
+	
+	    line
+	        .attr(x + "2", k * tickSizeInner);
+	
+	    text
+	        .attr(x, k * spacing)
+	        .text(format);
+	
+	    selection.filter(entering)
+	        .attr("fill", "none")
+	        .attr("font-size", 10)
+	        .attr("font-family", "sans-serif")
+	        .attr("text-anchor", orient === right ? "start" : orient === left ? "end" : "middle");
+	
+	    selection
+	        .each(function() { this.__axis = position; });
+	  }
+	
+	  axis.scale = function(_) {
+	    return arguments.length ? (scale = _, axis) : scale;
+	  };
+	
+	  axis.ticks = function() {
+	    return tickArguments = slice.call(arguments), axis;
+	  };
+	
+	  axis.tickArguments = function(_) {
+	    return arguments.length ? (tickArguments = _ == null ? [] : slice.call(_), axis) : tickArguments.slice();
+	  };
+	
+	  axis.tickValues = function(_) {
+	    return arguments.length ? (tickValues = _ == null ? null : slice.call(_), axis) : tickValues && tickValues.slice();
+	  };
+	
+	  axis.tickFormat = function(_) {
+	    return arguments.length ? (tickFormat = _, axis) : tickFormat;
+	  };
+	
+	  axis.tickSize = function(_) {
+	    return arguments.length ? (tickSizeInner = tickSizeOuter = +_, axis) : tickSizeInner;
+	  };
+	
+	  axis.tickSizeInner = function(_) {
+	    return arguments.length ? (tickSizeInner = +_, axis) : tickSizeInner;
+	  };
+	
+	  axis.tickSizeOuter = function(_) {
+	    return arguments.length ? (tickSizeOuter = +_, axis) : tickSizeOuter;
+	  };
+	
+	  axis.tickPadding = function(_) {
+	    return arguments.length ? (tickPadding = +_, axis) : tickPadding;
+	  };
+	
+	  return axis;
+	}
+	
+	function axisTop(scale) {
+	  return axis(top, scale);
+	}
+	
+	function axisRight(scale) {
+	  return axis(right, scale);
+	}
+	
+	function axisBottom(scale) {
+	  return axis(bottom, scale);
+	}
+	
+	function axisLeft(scale) {
+	  return axis(left, scale);
+	}
+	
+	exports.axisTop = axisTop;
+	exports.axisRight = axisRight;
+	exports.axisBottom = axisBottom;
+	exports.axisLeft = axisLeft;
+	
+	Object.defineProperty(exports, '__esModule', { value: true });
+	
+	})));
+
+
+/***/ }),
 /* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -11008,11 +11200,165 @@ webpackJsonp([5,9],[
 
 
 /***/ }),
-/* 35 */,
+/* 35 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_RESULT__;'use strict';
+	
+	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+	
+	function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+	
+	!(__WEBPACK_AMD_DEFINE_RESULT__ = function (require) {
+	    'use strict';
+	
+	    var _settingsToMajorTickM;
+	
+	    var d3Time = __webpack_require__(13);
+	    var d3TimeFormat = __webpack_require__(14);
+	
+	    var _require = __webpack_require__(20),
+	        axisTimeCombinations = _require.axisTimeCombinations,
+	        timeBenchmarks = _require.timeBenchmarks;
+	
+	    var singleTickWidth = 20;
+	    var horizontalTickSpacing = 50;
+	    var minEntryNumForDayFormat = 5;
+	    var xTickMinuteFormat = d3TimeFormat.timeFormat('%M m');
+	    var xTickHourFormat = d3TimeFormat.timeFormat('%H %p');
+	    var xTickSimpleDayFormat = d3TimeFormat.timeFormat('%e');
+	    var xTickDayMonthFormat = d3TimeFormat.timeFormat('%d %b');
+	    var xTickMonthFormat = d3TimeFormat.timeFormat('%b');
+	    var xTickYearFormat = d3TimeFormat.timeFormat('%Y');
+	
+	    var formatMap = {
+	        minute: xTickMinuteFormat,
+	        hour: xTickHourFormat,
+	        day: xTickSimpleDayFormat,
+	        daymonth: xTickDayMonthFormat,
+	        month: xTickMonthFormat,
+	        year: xTickYearFormat
+	    };
+	    var settingsToMajorTickMap = (_settingsToMajorTickM = {}, _defineProperty(_settingsToMajorTickM, axisTimeCombinations.MINUTE_HOUR, d3Time.timeHour.every(1)), _defineProperty(_settingsToMajorTickM, axisTimeCombinations.HOUR_DAY, d3Time.timeDay.every(1)), _defineProperty(_settingsToMajorTickM, axisTimeCombinations.DAY_MONTH, d3Time.timeMonth.every(1)), _defineProperty(_settingsToMajorTickM, axisTimeCombinations.MONTH_YEAR, d3Time.timeYear.every(1)), _settingsToMajorTickM);
+	
+	    /**
+	     * Figures out the proper settings from the current time span
+	     * @param  {Number} timeSpan    Span of time charted by the graph in milliseconds
+	     * @return {String}             Type of settings for the given timeSpan
+	     */
+	    var getAxisSettingsFromTimeSpan = function getAxisSettingsFromTimeSpan(timeSpan) {
+	        var ONE_YEAR = timeBenchmarks.ONE_YEAR,
+	            ONE_DAY = timeBenchmarks.ONE_DAY;
+	
+	        var settings = void 0;
+	
+	        if (timeSpan < ONE_DAY) {
+	            settings = axisTimeCombinations.HOUR_DAY;
+	        } else if (timeSpan < ONE_YEAR) {
+	            settings = axisTimeCombinations.DAY_MONTH;
+	        } else {
+	            settings = axisTimeCombinations.MONTH_YEAR;
+	        }
+	
+	        return settings;
+	    };
+	
+	    /**
+	     * Calculates the maximum number of ticks for the x axis
+	     * @param  {Number} width Chart width
+	     * @param  {Number} dataPointNumber  Number of entries on the data
+	     * @return {Number}       Number of ticks to render
+	     */
+	    var getMaxNumOfHorizontalTicks = function getMaxNumOfHorizontalTicks(width, dataPointNumber) {
+	        var ticksForWidth = Math.ceil(width / (singleTickWidth + horizontalTickSpacing));
+	
+	        return dataPointNumber < minEntryNumForDayFormat ? d3Time.timeDay : Math.min(dataPointNumber, ticksForWidth);
+	    };
+	
+	    /**
+	     * Returns tick object to be used when building the x axis
+	     * @param {dataByDate} dataByDate       Chart data ordered by Date
+	     * @param {Number} width                Chart width
+	     * @param {String} settings             Optional forced settings for axis
+	     * @return {object} tick settings for major and minr axis
+	     */
+	    var getXAxisSettings = function getXAxisSettings(dataByDate, width) {
+	        var settings = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+	
+	        var firstDate = new Date(dataByDate[0].date);
+	        var lastDate = new Date(dataByDate[dataByDate.length - 1].date);
+	        var dateTimeSpan = lastDate - firstDate;
+	
+	        if (!settings) {
+	            settings = getAxisSettingsFromTimeSpan(dateTimeSpan);
+	        }
+	
+	        var _settings$split = settings.split('-'),
+	            _settings$split2 = _slicedToArray(_settings$split, 2),
+	            minor = _settings$split2[0],
+	            major = _settings$split2[1];
+	
+	        var majorTickValue = settingsToMajorTickMap[settings];
+	        var minorTickValue = getMaxNumOfHorizontalTicks(width, dataByDate.length);
+	
+	        return {
+	            minor: {
+	                format: formatMap[minor],
+	                tick: minorTickValue
+	            },
+	            major: {
+	                format: formatMap[major],
+	                tick: majorTickValue
+	            }
+	        };
+	    };
+	
+	    return {
+	        getXAxisSettings: getXAxisSettings
+	    };
+	}.call(exports, __webpack_require__, exports, module), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
 /* 36 */,
 /* 37 */,
 /* 38 */,
-/* 39 */,
+/* 39 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_RESULT__;'use strict';
+	
+	!(__WEBPACK_AMD_DEFINE_RESULT__ = function (require) {
+	    'use strict';
+	
+	    var d3Format = __webpack_require__(9);
+	
+	    /**
+	     * Calculates percentage of value from total
+	     * @param  {Number}  value    Value to check
+	     * @param  {Number}  total    Sum of values
+	     * @param  {String}  decimals Specifies number of decimals https://github.com/d3/d3-format
+	     * @return {String}           Percentage
+	     */
+	    function calculatePercent(value, total, decimals) {
+	        return d3Format.format(decimals)(value / total * 100);
+	    }
+	
+	    /**
+	     * Checks if a number is an integer of has decimal values
+	     * @param  {Number}  value Value to check
+	     * @return {Boolean}       If it is an iteger
+	     */
+	    function isInteger(value) {
+	        return value % 1 === 0;
+	    }
+	
+	    return {
+	        calculatePercent: calculatePercent,
+	        isInteger: isInteger
+	    };
+	}.call(exports, __webpack_require__, exports, module), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
 /* 40 */,
 /* 41 */,
 /* 42 */,
@@ -11020,7 +11366,71 @@ webpackJsonp([5,9],[
 /* 44 */,
 /* 45 */,
 /* 46 */,
-/* 47 */,
+/* 47 */
+/***/ (function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_RESULT__;'use strict';
+	
+	!(__WEBPACK_AMD_DEFINE_RESULT__ = function (require) {
+	    'use strict';
+	
+	    var d3Format = __webpack_require__(9);
+	
+	    var valueRangeLimits = {
+	        small: 10,
+	        medium: 100
+	    };
+	    var integerValueFormats = {
+	        small: d3Format.format(''),
+	        medium: d3Format.format(''),
+	        large: d3Format.format('.2s')
+	    };
+	    var decimalValueFormats = {
+	        small: d3Format.format('.3f'),
+	        medium: d3Format.format('.1f'),
+	        large: d3Format.format('.2s')
+	    };
+	
+	    function getValueSize(value) {
+	        var size = 'large';
+	
+	        if (value < valueRangeLimits.small) {
+	            size = 'small';
+	        } else if (value < valueRangeLimits.medium) {
+	            size = 'medium';
+	        }
+	        return size;
+	    }
+	
+	    /**
+	     * Formats an integer value depending on its value range
+	     * @param  {Number} value Decimal point value to format
+	     * @return {Number}       Formatted value to show
+	     */
+	    function formatIntegerValue(value) {
+	        var format = integerValueFormats[getValueSize(value)];
+	
+	        return format(value);
+	    }
+	
+	    /**
+	     * Formats a floating point value depending on its value range
+	     * @param  {Number} value Decimal point value to format
+	     * @return {Number}       Formatted value to show
+	     */
+	    function formatDecimalValue(value) {
+	        var format = decimalValueFormats[getValueSize(value)];
+	
+	        return format(value);
+	    }
+	
+	    return {
+	        formatDecimalValue: formatDecimalValue,
+	        formatIntegerValue: formatIntegerValue
+	    };
+	}.call(exports, __webpack_require__, exports, module), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
 /* 48 */,
 /* 49 */,
 /* 50 */,
@@ -11038,6 +11448,8 @@ webpackJsonp([5,9],[
 	    'use strict';
 	
 	    var d3Array = __webpack_require__(4);
+	    var d3Axis = __webpack_require__(6);
+	    var d3Collection = __webpack_require__(11);
 	    var d3Ease = __webpack_require__(5);
 	    var d3Scale = __webpack_require__(10);
 	    var d3Shape = __webpack_require__(33);
@@ -11048,6 +11460,17 @@ webpackJsonp([5,9],[
 	        exportChart = _require.exportChart;
 	
 	    var colorHelper = __webpack_require__(19);
+	    var timeAxisHelper = __webpack_require__(35);
+	
+	    var _require2 = __webpack_require__(39),
+	        isInteger = _require2.isInteger;
+	
+	    var _require3 = __webpack_require__(20),
+	        axisTimeCombinations = _require3.axisTimeCombinations;
+	
+	    var _require4 = __webpack_require__(47),
+	        formatIntegerValue = _require4.formatIntegerValue,
+	        formatDecimalValue = _require4.formatDecimalValue;
 	
 	    /**
 	     * @typedef SparklineChartData
@@ -11087,6 +11510,8 @@ webpackJsonp([5,9],[
 	     *     .call(sparkLineChart);
 	     *
 	     */
+	
+	
 	    return function module() {
 	
 	        var margin = {
@@ -11099,6 +11524,17 @@ webpackJsonp([5,9],[
 	            height = 30,
 	            xScale = void 0,
 	            yScale = void 0,
+	            xAxis = void 0,
+	            xMonthAxis = void 0,
+	            yAxis = void 0,
+	            xAxisPadding = {
+	            top: 0,
+	            left: 15,
+	            bottom: 20,
+	            right: 0
+	        },
+	            monthAxisPadding = 28,
+	            tickPadding = 5,
 	            areaGradient = ['#F5FDFF', '#F6FEFC'],
 	            lineGradient = colorHelper.colorGradients.greenBlueGradient,
 	            svg = void 0,
@@ -11113,6 +11549,14 @@ webpackJsonp([5,9],[
 	            markerSize = 1.5,
 	            valueLabel = 'value',
 	            dateLabel = 'date',
+	            axes = void 0,
+	            forceAxisSettings = null,
+	            forcedXTicks = null,
+	            forcedXFormat = null,
+	            verticalTicks = 5,
+	            horizontalGridLines = void 0,
+	            grid = false,
+	            baseLine = void 0,
 	
 	
 	        // getters
@@ -11140,6 +11584,8 @@ webpackJsonp([5,9],[
 	
 	                buildScales();
 	                buildSVG(this);
+	                buildAxis();
+	                drawAxis();
 	                createGradients();
 	                createMaskingClip();
 	                drawLine();
@@ -11157,6 +11603,10 @@ webpackJsonp([5,9],[
 	        function buildContainerGroups() {
 	            var container = svg.append('g').classed('container-group', true).attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 	
+	            container.append('g').classed('x-axis-group', true).append('g').classed('axis x', true);
+	            container.selectAll('.x-axis-group').append('g').classed('month-axis', true);
+	            container.append('g').classed('y-axis-group axis y', true);
+	            container.append('g').classed('grid-lines-group', true);
 	            container.append('g').classed('chart-group', true);
 	            container.append('g').classed('metadata-group', true);
 	        }
@@ -11201,6 +11651,67 @@ webpackJsonp([5,9],[
 	        }
 	
 	        /**
+	         * Adjusts the position of the y axis' ticks
+	         * @param  {D3Selection} selection Y axis group
+	         * @return void
+	         */
+	        function adjustYTickLabels(selection) {
+	            selection.selectAll('.tick text').attr('transform', 'translate(0, -7)');
+	        }
+	
+	        /**
+	         * Formats the value depending on its characteristics
+	         * @param  {Number} value Value to format
+	         * @return {Number}       Formatted value
+	         */
+	        function getFormattedValue(value) {
+	            var format = void 0;
+	
+	            if (isInteger(value)) {
+	                format = formatIntegerValue;
+	            } else {
+	                format = formatDecimalValue;
+	            }
+	
+	            return format(value);
+	        }
+	
+	        /**
+	         * Creates the d3 x and y axis, setting orientations
+	         * @private
+	         */
+	        function buildAxis() {
+	            if (!axes) return;
+	
+	            var dataTimeSpan = yScale.domain()[1] - yScale.domain()[0];
+	            var yTickNumber = dataTimeSpan < verticalTicks - 1 ? dataTimeSpan : verticalTicks;
+	            var minor = void 0,
+	                major = void 0;
+	
+	            if (forceAxisSettings === 'custom' && typeof forcedXFormat === 'string') {
+	                minor = {
+	                    tick: forcedXTicks,
+	                    format: d3TimeFormat.timeFormat(forcedXFormat)
+	                };
+	                major = null;
+	            } else {
+	                var _timeAxisHelper$getXA = timeAxisHelper.getXAxisSettings(data, width, forceAxisSettings);
+	
+	                minor = _timeAxisHelper$getXA.minor;
+	                major = _timeAxisHelper$getXA.major;
+	
+	
+	                xMonthAxis = d3Axis.axisBottom(xScale).ticks(major.tick).tickSize(0, 0).tickFormat(major.format);
+	            }
+	
+	            xAxis = d3Axis.axisBottom(xScale).ticks(minor.tick).tickSize(10, 0).tickPadding(tickPadding).tickFormat(minor.format);
+	
+	            yAxis = d3Axis.axisLeft(yScale).ticks(yTickNumber).tickSize([0]).tickPadding(tickPadding).tickFormat(getFormattedValue);
+	
+	            drawGridLines(minor.tick, yTickNumber);
+	        }
+	
+	        /**
 	         * Creates the gradient on the area below the line
 	         * @return {void}
 	         */
@@ -11239,6 +11750,23 @@ webpackJsonp([5,9],[
 	        }
 	
 	        /**
+	         * Draws the x and y axis on the svg object within their
+	         * respective groups
+	         * @private
+	         */
+	        function drawAxis() {
+	            if (!axes) return;
+	
+	            svg.select('.x-axis-group .axis.x').attr('transform', 'translate(0, ' + chartHeight + ')').call(xAxis);
+	
+	            if (forceAxisSettings !== 'custom') {
+	                svg.select('.x-axis-group .month-axis').attr('transform', 'translate(0, ' + (chartHeight + xAxisPadding.bottom + monthAxisPadding) + ')').call(xMonthAxis);
+	            }
+	
+	            svg.select('.y-axis-group.axis.y').transition().ease(ease).attr('transform', 'translate(' + -xAxisPadding.left + ', 0)').call(yAxis).call(adjustYTickLabels);
+	        }
+	
+	        /**
 	         * Draws the area that will be placed below the line
 	         * @private
 	         */
@@ -11247,7 +11775,7 @@ webpackJsonp([5,9],[
 	                var date = _ref7.date;
 	                return xScale(date);
 	            }).y0(function () {
-	                return yScale(0);
+	                return height - margin.bottom - margin.top;
 	            }).y1(function (_ref8) {
 	                var value = _ref8.value;
 	                return yScale(value);
@@ -11270,6 +11798,23 @@ webpackJsonp([5,9],[
 	            });
 	
 	            svg.select('.chart-group').append('path').datum(data).attr('class', 'line').attr('d', line).attr('clip-path', 'url(#maskingClip)');
+	        }
+	
+	        /**
+	         * Draws grid lines on the background of the chart
+	         * @return void
+	         */
+	        function drawGridLines(xTicks, yTicks) {
+	            if (!grid) return;
+	
+	            horizontalGridLines = svg.select('.grid-lines-group').selectAll('line.horizontal-grid-line').data(yScale.ticks(yTicks)).enter().append('line').attr('class', 'horizontal-grid-line').attr('x1', -xAxisPadding.left - 30).attr('x2', chartWidth).attr('y1', function (d) {
+	                return yScale(d);
+	            }).attr('y2', function (d) {
+	                return yScale(d);
+	            });
+	
+	            //draw a horizontal line to extend x-axis till the edges
+	            baseLine = svg.select('.grid-lines-group').selectAll('line.extended-x-line').data([0]).enter().append('line').attr('class', 'extended-x-line').attr('x1', -xAxisPadding.left - 30).attr('x2', chartWidth).attr('y1', height - margin.bottom - margin.top).attr('y2', height - margin.bottom - margin.top);
 	        }
 	
 	        /**
@@ -11416,12 +11961,124 @@ webpackJsonp([5,9],[
 	        };
 	
 	        /**
+	         * Exposes the ability to force the chart to show a certain x axis grouping
+	         * @param  {String} _x Desired format
+	         * @return { (String|Module) }    Current format or module to chain calls
+	         * @example
+	         *     line.forceAxisFormat(line.axisTimeCombinations.HOUR_DAY)
+	         */
+	        exports.forceAxisFormat = function (_x) {
+	            if (!arguments.length) {
+	                return forceAxisSettings;
+	            }
+	            forceAxisSettings = _x;
+	
+	            return this;
+	        };
+	
+	        /**
+	         * Exposes the ability to force the chart to show a certain x format
+	         * It requires a `forceAxisFormat` of 'custom' in order to work.
+	         * @param  {String} _x              Desired format for x axis
+	         * @return { (String|Module) }      Current format or module to chain calls
+	         */
+	        exports.forcedXFormat = function (_x) {
+	            if (!arguments.length) {
+	                return forcedXFormat;
+	            }
+	            forcedXFormat = _x;
+	
+	            return this;
+	        };
+	
+	        /**
+	         * Gets or Sets the number of verticalTicks of the yAxis on the chart
+	         * @param  {Number} _x Desired verticalTicks
+	         * @return { verticalTicks | module} Current verticalTicks or Chart module to chain calls
+	         * @public
+	         */
+	        exports.verticalTicks = function (_x) {
+	            if (!arguments.length) {
+	                return verticalTicks;
+	            }
+	            verticalTicks = _x;
+	
+	            return this;
+	        };
+	
+	        /**
+	         * Exposes the ability to force the chart to show a certain x ticks. It requires a `forceAxisFormat` of 'custom' in order to work.
+	         * NOTE: This value needs to be a multiple of 2, 5 or 10. They won't always work as expected, as D3 decides at the end
+	         * how many and where the ticks will appear.
+	         *
+	         * @param  {Number} _x              Desired number of x axis ticks (multiple of 2, 5 or 10)
+	         * @return { (Number|Module) }      Current number or ticks or module to chain calls
+	         */
+	        exports.forcedXTicks = function (_x) {
+	            if (!arguments.length) {
+	                return forcedXTicks;
+	            }
+	            forcedXTicks = _x;
+	
+	            return this;
+	        };
+	
+	        /**
+	         * Gets or Sets the axes display.
+	         *
+	         * @param  {Boolean} _x Desired display for the axes (true/false)
+	         * @return { Boolean | module} Current display of the axes or the Chart module to chain calls
+	         * @public
+	         */
+	        exports.axes = function (_x) {
+	            if (!arguments.length) {
+	                return axes;
+	            }
+	            axes = !!_x;
+	
+	            if (axes) {
+	                margin = {
+	                    top: 60,
+	                    right: 30,
+	                    bottom: 60,
+	                    left: 70
+	                };
+	            }
+	
+	            return this;
+	        };
+	
+	        /**
+	         * Gets or Sets the grid display mode.
+	         *
+	         * @param  {Boolean} _x Desired display mode for the grid
+	         * @return { Boolean | module} Current mode of the grid or Chart module to chain calls
+	         * @public
+	         */
+	        exports.grid = function (_x) {
+	            if (!arguments.length) {
+	                return grid;
+	            }
+	            grid = !!_x;
+	
+	            return this;
+	        };
+	
+	        /**
 	         * Chart exported to png and a download action is fired
 	         * @public
 	         */
 	        exports.exportChart = function (filename, title) {
 	            exportChart.call(exports, svg, filename, title);
 	        };
+	
+	        /**
+	         * Exposes the constants to be used to force the x axis to respect a certain granularity
+	         * current options: MINUTE_HOUR, HOUR_DAY, DAY_MONTH, MONTH_YEAR
+	         * @example
+	         *     line.forceAxisFormat(line.axisTimeCombinations.HOUR_DAY)
+	         */
+	        exports.axisTimeCombinations = axisTimeCombinations;
 	
 	        return exports;
 	    };

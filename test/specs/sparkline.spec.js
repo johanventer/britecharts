@@ -21,13 +21,12 @@ define([
         }
 
         function hasClass(element, className) {
-            return _.contains(element[0][0].classList, className);
+            return _.contains(element.node().classList, className);
         }
 
         beforeEach(() => {
             dataset = aTestDataSet().with1Source().build();
-            sparklineChart = sparkline().dateLabel('dateUTC');
-
+            sparklineChart = sparkline().dateLabel('dateUTC').width(500);
             // DOM Fixture Setup
             f = jasmine.getFixtures();
             f.fixturesPath = 'base/test/fixtures/';
@@ -51,6 +50,9 @@ define([
         it('should render container and chart groups', () => {
             expect(containerFixture.select('g.container-group').empty()).toBeFalsy();
             expect(containerFixture.select('g.chart-group').empty()).toBeFalsy();
+            expect(containerFixture.select('g.x-axis-group').empty()).toBeFalsy();
+            expect(containerFixture.select('g.y-axis-group').empty()).toBeFalsy();
+            expect(containerFixture.select('g.grid-lines-group').empty()).toBeFalsy();
             expect(containerFixture.select('g.metadata-group').empty()).toBeFalsy();
         });
 
@@ -68,6 +70,64 @@ define([
 
         it('should create a gradient for the line', () => {
             expect(containerFixture.selectAll('#sparkline-line-gradient').empty()).toEqual(false);
+        });
+
+        // Event Setting
+        it('should trigger an event on hover', () => {
+            let callback = jasmine.createSpy('hoverCallback'),
+                container = containerFixture.selectAll('svg');
+
+            sparklineChart.on('customMouseOver', callback);
+            container.dispatch('mouseover');
+
+            expect(callback.calls.count()).toBe(1);
+        });
+
+        it('should trigger an event on mouse out', () => {
+            let callback = jasmine.createSpy('mouseOutCallback'),
+                container = containerFixture.selectAll('svg');
+
+            sparklineChart.on('customMouseOut', callback);
+            container.dispatch('mouseout');
+            expect(callback.calls.count()).toBe(1);
+        });
+
+        // Overlay
+        it('should render an overlay to trigger the hover effect', () => {
+            expect(containerFixture.select('.overlay').empty()).toBeFalsy();
+        });
+
+        it('should show the overlay when the mouse is hovering', () =>  {
+            let container = containerFixture.selectAll('svg');
+
+            expect(containerFixture.select('.overlay').style('display')).toBe('none');
+            container.dispatch('mouseover');
+            expect(containerFixture.select('.overlay').style('display')).toBe('block');
+        });
+
+        // Vertical Marker
+        it('should render a vertical marker and its container', () => {
+            expect(containerFixture.select('.hover-marker').empty()).toBeFalsy();
+            expect(containerFixture.select('.vertical-marker').empty()).toBeFalsy();
+        });
+
+        it('should show a vertical line where the mouse is hovering', () =>  {
+            let container = containerFixture.selectAll('svg'),
+                verticalLine = containerFixture.select('.hover-marker line');
+
+            container.dispatch('mouseover');
+            expect(hasClass(verticalLine, 'bc-is-active')).toBe(true);
+        });
+
+        it('should hide the vertical marker when the mouse is out', () =>  {
+            let container = containerFixture.selectAll('svg'),
+                verticalLine = containerFixture.select('.hover-marker line');
+
+            expect(hasClass(verticalLine, 'bc-is-active')).toBe(false);
+            container.dispatch('mouseover');
+            expect(hasClass(verticalLine, 'bc-is-active')).toBe(true);
+            container.dispatch('mouseout');
+            expect(hasClass(verticalLine, 'bc-is-active')).toBe(false);
         });
 
         describe('when isAnimated is true', () => {
@@ -189,12 +249,124 @@ define([
                 expect(defaultGradient).not.toBe(testGradient);
                 expect(newGradient).toBe(testGradient);
             });
+
+            it('should provide a forceAxisFormat getter and setter', () => {
+                let defaultSchema = sparklineChart.forceAxisFormat(),
+                    testFormat = sparklineChart.axisTimeCombinations.HOUR_DAY,
+                    newSchema;
+
+                sparklineChart.forceAxisFormat(testFormat);
+                newSchema = sparklineChart.forceAxisFormat();
+
+                expect(defaultSchema).not.toBe(testFormat);
+                expect(newSchema).toBe(testFormat);
+            });
+
+            it('should provide a forcedXTicks getter and setter', () => {
+                let defaultForcedXTicks = sparklineChart.forcedXTicks(),
+                    testXTicks = 2,
+                    newForcedXTicks;
+
+                sparklineChart.forcedXTicks(testXTicks);
+                newForcedXTicks = sparklineChart.forcedXTicks();
+
+                expect(defaultForcedXTicks).not.toBe(testXTicks);
+                expect(newForcedXTicks).toBe(testXTicks);
+            });
+
+            it('should provide a forcedXFormat getter and setter', () => {
+                let defaultForcedXFormat = sparklineChart.forcedXFormat(),
+                    testXFormat = '%d %b',
+                    newForcedXFormat;
+
+                sparklineChart.forcedXFormat(testXFormat);
+                newForcedXFormat = sparklineChart.forcedXFormat();
+
+                expect(defaultForcedXFormat).not.toBe(testXFormat);
+                expect(newForcedXFormat).toBe(testXFormat);
+            });
+
+            it('should provide an axisTimeCombinations accessor', () => {
+                let axisTimeCombinations = sparklineChart.axisTimeCombinations;
+
+                expect(axisTimeCombinations).toEqual({
+                    MINUTE_HOUR: 'minute-hour',
+                    HOUR_DAY: 'hour-daymonth',
+                    DAY_MONTH: 'day-month',
+                    MONTH_YEAR: 'month-year'
+                });
+            });
+
+            it('should provide grid display getter and setter', () => {
+                let defaultGridMode = sparklineChart.grid(),
+                    testValue = true,
+                    newGridMode;
+
+                sparklineChart.grid(testValue);
+                newGridMode = sparklineChart.grid();
+
+                expect(defaultGridMode).not.toBe(testValue);
+                expect(newGridMode).toBe(testValue);
+            });
+
+            it('should provide axes display getter and setter', () => {
+                let defaultAxesDisplay = sparklineChart.axes(),
+                    testValue = true,
+                    newAxesDisplay;
+
+                sparklineChart.axes(testValue);
+                newAxesDisplay = sparklineChart.axes();
+
+                expect(defaultAxesDisplay).not.toBe(testValue);
+                expect(newAxesDisplay).toBe(testValue);
+            });
+
+            it('should provide verticalTicks getter and setter', () => {
+                let defaultVerticalTicks = sparklineChart.verticalTicks(),
+                    testVerticalTicks = 3,
+                    newVerticalTicks;
+
+                sparklineChart.verticalTicks(testVerticalTicks);
+                newVerticalTicks = sparklineChart.verticalTicks();
+
+                expect(defaultVerticalTicks).not.toBe(testVerticalTicks);
+                expect(newVerticalTicks).toBe(testVerticalTicks);
+            });
         });
 
         describe('Export chart functionality', () => {
 
             it('should have exportChart defined', () => {
                 expect(sparklineChart.exportChart).toBeDefined();
+            });
+        });
+
+        describe('Grid', function() {
+
+            beforeEach(() => {
+                sparklineChart = sparkline().dateLabel('dateUTC').axes(true).grid(true);
+                dataset = aTestDataSet().with1Source().build();
+
+                // DOM Fixture Setup
+                f = jasmine.getFixtures();
+                f.fixturesPath = 'base/test/fixtures/';
+                f.load('testContainer.html');
+
+                containerFixture = d3.select('.test-container').append('svg');
+                containerFixture.datum(dataset.data).call(sparklineChart);
+            });
+
+            afterEach(() => {
+                containerFixture.remove();
+                f = jasmine.getFixtures();
+                f.cleanUp();
+                f.clearCache();
+            });
+
+            describe('when grid is displayed', function() {
+                it('should render the horizontal grid lines', () => {
+                    expect(containerFixture.selectAll('.horizontal-grid-line').empty()).toBeFalsy();
+                });
             });
         });
     });

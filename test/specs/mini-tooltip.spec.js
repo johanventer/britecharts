@@ -140,6 +140,18 @@ define(['jquery', 'd3', 'mini-tooltip'], function($, d3, tooltip) {
                 expect(defaultNameLabel).not.toBe(newNameLabel);
                 expect(newNameLabel).toBe(testNameLabel);
             });
+
+            it('should provide tooltipValueFormat getter and setter', () => {
+                let defaultValueFormat = d3.format('.2f'),
+                    testValueFormat = d3.format('$,.2f'),
+                    newValueFormat;
+
+                tooltipChart.tooltipValueFormat(testValueFormat);
+                newValueFormat = tooltipChart.tooltipValueFormat();
+
+                expect(defaultValueFormat).not.toBe(newValueFormat);
+                expect(newValueFormat).toBe(testValueFormat);
+            });
         });
     });
 });

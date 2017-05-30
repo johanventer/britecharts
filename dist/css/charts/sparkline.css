@@ -14,3 +14,8 @@
   .sparkline .sparkline-area {
     fill: url(#sparkline-area-gradient);
     stroke: none; }
+  .sparkline .x.axis path,
+  .sparkline .y.axis path {
+    display: none; }
+  .sparkline .month-axis path {
+    display: none; }

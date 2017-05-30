@@ -25,4 +25,13 @@ $dot-size: 0;
         fill: url(#sparkline-area-gradient);
         stroke: none;
     }
+
+    // Axes
+    .x.axis path,
+    .y.axis path {
+        display: none;
+    }
+    .month-axis path {
+        display: none;
+    }
 }

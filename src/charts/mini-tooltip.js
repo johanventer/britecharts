@@ -389,6 +389,20 @@ define(function(require){
         };
 
         /**
+         * Gets or Sets the value formatter function
+         * @param  {string} _x Desired formatter function
+         * @return { string | module} Current formatter function or module to chain calls
+         * @public
+         */
+        exports.tooltipValueFormat = function(_x) {
+            if (!arguments.length) {
+                return tooltipValueFormat;
+            }
+            tooltipValueFormat = _x;
+            return this;
+        };
+
+        /**
          * Updates the position and content of the tooltip
          * @param  {Object} dataPoint       Datapoint of the hovered element
          * @param  {Array} mousePosition    Mouse position relative to the parent chart [x, y]
